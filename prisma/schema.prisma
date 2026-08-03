@@ -1,0 +1,623 @@
+// prisma/schema.prisma
+// PakVerse Portal — Complete Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// 🔐 AUTH & USERS
+// ============================================
+
+enum Role {
+  USER
+  SHOP_OWNER
+  INSTITUTE_ADMIN
+  DOCTOR
+  HOSPITAL_ADMIN
+  ADMIN
+}
+
+model User {
+  id               String    @id @default(uuid())
+  fullName         String
+  email            String    @unique
+  passwordHash     String
+  avatar           String?
+  coverPhoto       String?
+  bio              String?
+  city             String?
+  website          String?
+  phone            String?
+  isVerified       Boolean   @default(false)
+  isOnline         Boolean   @default(false)
+  lastActive       DateTime  @default(now())
+  role             Role      @default(USER)
+  refreshTokenHash String?
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  shops            Shop[]
+  posts            Post[]
+  comments         Comment[]
+  reactions        Reaction[]
+  listings         MarketplaceListing[]
+  institutes       Institute[]
+  enrollments      Enrollment[]
+  doctorProfile    Doctor?
+  patientProfile   Patient?
+  hospitals        Hospital[]
+
+  sentFriendRequests     Friendship[] @relation("FriendRequestSender")
+  receivedFriendRequests Friendship[] @relation("FriendRequestReceiver")
+  notifications          Notification[]
+  sentInquiries          Inquiry[]    @relation("InquirySender")
+  receivedInquiries      Inquiry[]    @relation("InquiryReceiver")
+
+  @@index([email])
+  @@index([city])
+}
+
+// ============================================
+// 🏪 STORE / SHOPS
+// ============================================
+
+enum ShopType {
+  PRODUCT_SELLER
+  SERVICE_PROVIDER
+}
+
+model Shop {
+  id              String      @id @default(uuid())
+  name            String
+  slug            String      @unique
+  description     String
+  shopType        ShopType
+  city            String
+  categories      String[]
+  logoUrl         String?
+  bannerUrl       String?
+  rating          Float       @default(0)
+  totalReviews    Int         @default(0)
+  isActive        Boolean     @default(true)
+
+  // Contact & Social
+  whatsappNumber  String?
+  facebookUrl     String?
+  instagramHandle String?
+  websiteUrl      String?
+  phone           String?
+  email           String?
+
+  // Relations
+  ownerId         String
+  owner           User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  products        ShopProduct[]
+  reviews         ShopReview[]
+  gallery         ShopGalleryImage[]
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([city])
+  @@index([shopType])
+  @@index([ownerId])
+  @@index([isActive])
+}
+
+model ShopProduct {
+  id                 String   @id @default(uuid())
+  name               String
+  price              Float
+  description        String
+  imageUrl           String?
+  category           String
+  discountPercentage Float    @default(0)
+  isActive           Boolean  @default(true)
+
+  shopId             String
+  shop               Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([shopId])
+  @@index([category])
+}
+
+model ShopGalleryImage {
+  id        String   @id @default(uuid())
+  imageUrl  String
+  caption   String?
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([shopId])
+}
+
+model ShopReview {
+  id             String   @id @default(uuid())
+  rating         Int
+  comment        String?
+  reviewerName   String
+  reviewerAvatar String?
+  shopId         String
+  shop           Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+
+  @@index([shopId])
+}
+
+// ============================================
+// 🎓 EDUCATION
+// ============================================
+
+enum AdmissionStatus {
+  OPEN
+  CLOSED
+  COMING_SOON
+}
+
+model Institute {
+  id              String          @id @default(uuid())
+  name            String
+  slug            String          @unique
+  description     String
+  type            String
+  city            String
+  location        String
+  logoUrl         String?
+  bannerUrl       String?
+  tagline         String?
+  brandColor      String?
+  website         String?
+  phone           String
+  email           String
+  yearEstablished Int?
+  studentCount    String?
+  specialization  String
+  admissionStatus AdmissionStatus @default(OPEN)
+  facilities      String?
+  rating          Float           @default(0)
+  isVerified      Boolean         @default(false)
+
+  adminId         String
+  admin           User            @relation(fields: [adminId], references: [id])
+  courses         Course[]
+  enrollments     Enrollment[]
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([city])
+  @@index([type])
+  @@index([admissionStatus])
+}
+
+model Course {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  duration    String?
+  fee         Float?
+  instructor  String?
+  schedule    String?
+
+  instituteId String
+  institute   Institute    @relation(fields: [instituteId], references: [id], onDelete: Cascade)
+  enrollments Enrollment[]
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([instituteId])
+}
+
+model Enrollment {
+  id          String    @id @default(uuid())
+  status      String    @default("active")
+  grade       String?
+  progress    Float     @default(0)
+
+  studentId   String
+  student     User      @relation(fields: [studentId], references: [id])
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id])
+  instituteId String
+  institute   Institute @relation(fields: [instituteId], references: [id])
+
+  enrolledAt  DateTime  @default(now())
+  completedAt DateTime?
+
+  @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([instituteId])
+}
+
+// ============================================
+// 📱 SOCIAL FEED
+// ============================================
+
+enum PostType {
+  TEXT
+  POST
+  NEWS
+  VIDEO
+}
+
+enum ReactionType {
+  HEART
+  LAUGH
+  WOW
+  SAD
+  ANGRY
+  LIKE
+}
+
+model Post {
+  id            String     @id @default(uuid())
+  content       String
+  type          PostType   @default(POST)
+  city          String
+  location      String?
+  hashtags      String[]
+  mediaUrls     String[]
+  likesCount    Int        @default(0)
+  commentsCount Int        @default(0)
+  sharesCount   Int        @default(0)
+
+  authorId      String
+  author        User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments      Comment[]
+  reactions     Reaction[]
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([city])
+  @@index([authorId])
+  @@index([createdAt(sort: Desc)])
+  @@index([type])
+}
+
+model Comment {
+  id       String    @id @default(uuid())
+  content  String
+
+  authorId String
+  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  postId   String
+  post     Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  parentId String?
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies  Comment[] @relation("CommentReplies")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId])
+  @@index([authorId])
+  @@index([parentId])
+}
+
+model Reaction {
+  id        String       @id @default(uuid())
+  type      ReactionType
+
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime     @default(now())
+
+  @@unique([userId, postId])
+  @@index([postId])
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  BLOCKED
+}
+
+model Friendship {
+  id         String           @id @default(uuid())
+  status     FriendshipStatus @default(PENDING)
+
+  senderId   String
+  sender     User             @relation("FriendRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User             @relation("FriendRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@unique([senderId, receiverId])
+  @@index([senderId, status])
+  @@index([receiverId, status])
+}
+
+// ============================================
+// 🛒 MARKETPLACE
+// ============================================
+
+enum ListingCondition {
+  NEW
+  USED
+  REFURBISHED
+}
+
+enum ListingStatus {
+  ACTIVE
+  SOLD
+  EXPIRED
+  DRAFT
+}
+
+model MarketplaceListing {
+  id             String           @id @default(uuid())
+  title          String
+  description    String
+  price          Float
+  category       String
+  condition      ListingCondition
+  city           String
+  imageUrls      String[]
+  contactPhone   String
+  contactEmail   String?
+  status         ListingStatus    @default(ACTIVE)
+  viewsCount     Int              @default(0)
+  favoritesCount Int              @default(0)
+  isFeatured     Boolean          @default(false)
+
+  sellerId       String
+  seller         User             @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  inquiries      Inquiry[]
+
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([category])
+  @@index([city])
+  @@index([status])
+  @@index([sellerId])
+  @@index([price])
+}
+
+enum InquiryStatus {
+  UNREAD
+  READ
+  REPLIED
+}
+
+model Inquiry {
+  id         String        @id @default(uuid())
+  message    String
+  reply      String?
+  status     InquiryStatus @default(UNREAD)
+
+  senderId   String
+  sender     User          @relation("InquirySender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User          @relation("InquiryReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  listingId  String
+  listing    MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([listingId])
+}
+
+// ============================================
+// 🏥 HOSPITAL / HEALTHCARE
+// ============================================
+
+model Hospital {
+  id               String   @id @default(uuid())
+  name             String
+  slug             String   @unique
+  description      String
+  specialization   String
+  city             String
+  category         String
+  imageUrl         String?
+  rating           Float    @default(0)
+  doctorsCount     Int      @default(0)
+  bedsCount        Int      @default(0)
+  emergencyService Boolean  @default(false)
+  admissionStatus  String   @default("Open")
+  phone            String?
+  email            String?
+  address          String?
+  website          String?
+
+  adminId          String
+  admin            User     @relation(fields: [adminId], references: [id])
+
+  doctors          Doctor[]
+  appointments     Appointment[]
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([city])
+  @@index([category])
+  @@index([specialization])
+}
+
+model Doctor {
+  id              String    @id @default(uuid())
+  specialty       String
+  experience      String
+  consultationFee String
+  bio             String?
+  schedule        Json?
+  isAvailable     Boolean   @default(true)
+
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hospitalId      String
+  hospital        Hospital  @relation(fields: [hospitalId], references: [id])
+  appointments    Appointment[]
+  prescriptions   Prescription[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([hospitalId])
+  @@index([specialty])
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum AppointmentType {
+  CONSULTATION
+  FOLLOW_UP
+  CHECKUP
+  EMERGENCY
+}
+
+model Appointment {
+  id            String            @id @default(uuid())
+  date          DateTime
+  time          String
+  status        AppointmentStatus @default(PENDING)
+  type          AppointmentType   @default(CONSULTATION)
+  patientName   String
+  patientPhone  String
+  patientEmail  String?
+  patientAge    Int?
+  patientGender String?
+  symptoms      String?
+  notes         String?
+
+  doctorId      String
+  doctor        Doctor            @relation(fields: [doctorId], references: [id])
+  hospitalId    String
+  hospital      Hospital          @relation(fields: [hospitalId], references: [id])
+  patientId     String?
+  patient       Patient?          @relation(fields: [patientId], references: [id])
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([doctorId, date])
+  @@index([patientId])
+  @@index([hospitalId])
+  @@index([status])
+}
+
+model Patient {
+  id               String          @id @default(uuid())
+  bloodType        String?
+  allergies        String[]
+  emergencyContact String?
+  insuranceInfo    String?
+
+  userId           String          @unique
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments     Appointment[]
+  prescriptions    Prescription[]
+  medicalRecords   MedicalRecord[]
+  healthMetrics    HealthMetric[]
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+model Prescription {
+  id           String   @id @default(uuid())
+  medication   String
+  dosage       String
+  frequency    String
+  duration     String
+  remaining    String?
+  instructions String?
+  isActive     Boolean  @default(true)
+
+  doctorId     String
+  doctor       Doctor   @relation(fields: [doctorId], references: [id])
+  patientId    String
+  patient      Patient  @relation(fields: [patientId], references: [id])
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([patientId, isActive])
+  @@index([doctorId])
+}
+
+model MedicalRecord {
+  id           String   @id @default(uuid())
+  date         DateTime
+  diagnosis    String
+  doctorName   String
+  hospitalName String
+  notes        String?
+  reportUrl    String?
+  status       String   @default("completed")
+
+  patientId    String
+  patient      Patient  @relation(fields: [patientId], references: [id])
+
+  createdAt    DateTime @default(now())
+
+  @@index([patientId])
+}
+
+model HealthMetric {
+  id         String   @id @default(uuid())
+  metricType String
+  value      String
+  unit       String
+  status     String
+
+  patientId  String
+  patient    Patient  @relation(fields: [patientId], references: [id])
+
+  recordedAt DateTime @default(now())
+
+  @@index([patientId, metricType])
+}
+
+// ============================================
+// 🔔 NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  type      String
+  isRead    Boolean  @default(false)
+  data      Json?
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt(sort: Desc)])
+}
