@@ -112,7 +112,46 @@ export class AuthService {
       data: { refreshTokenHash: await this.hashRefreshToken(refreshToken) },
     });
 
+    // Send welcome email asynchronously so it doesn't block signup
+    this.sendWelcomeEmail(user.email, user.fullName).catch(err => {
+      console.error('Failed to send welcome email:', err);
+    });
+
     return { user, accessToken, refreshToken };
+  }
+
+  // ─── Welcome Email ────────────────────────────────────────────
+  private async sendWelcomeEmail(email: string, fullName: string) {
+    try {
+      const mailer = await this.getMailer();
+      const loginUrl = `${this.config.get('FRONTEND_URL')}/login`;
+      
+      const info = await mailer.sendMail({
+        from: this.config.get('MAIL_FROM', 'noreply@pakverse.pk'),
+        to: email,
+        subject: 'Welcome to PakVerse! 🚀',
+        html: `
+          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">
+            <h2 style="color:#0ea5e9">Welcome to PakVerse!</h2>
+            <p>Hi ${fullName},</p>
+            <p>Thank you for creating an account on PakVerse. We're thrilled to have you join our community!</p>
+            <p>You can now explore the marketplace, find educational courses, and connect with people from all across the country.</p>
+            <a href="${loginUrl}" style="display:inline-block;padding:12px 24px;background:#0ea5e9;color:white;text-decoration:none;border-radius:8px;margin:16px 0">
+              Go to Login
+            </a>
+            <p>If you have any questions, feel free to reach out to our support team.</p>
+            <hr/>
+            <small style="color:#888">PakVerse Portal — Pakistan's community platform</small>
+          </div>
+        `,
+      });
+
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('📧 Welcome email preview:', nodemailer.getTestMessageUrl(info));
+      }
+    } catch (error) {
+      console.error('Welcome email send failed:', error);
+    }
   }
 
   // ─── Login ────────────────────────────────────────────────────
