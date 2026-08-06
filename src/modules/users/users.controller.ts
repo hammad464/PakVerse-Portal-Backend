@@ -26,14 +26,14 @@ export class UsersController {
   @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Get own profile' })
   async getProfile(@CurrentUser('id') userId: string) {
-    return { message: 'Profile retrieved', data: await this.usersService.getProfile(userId) };
+    return { message: 'Profile retrieved', data: await this.usersService.getProfile(userId, userId) };
   }
 
   @Public()
   @Get('profile/:id')
   @ApiOperation({ summary: 'Get user profile by ID' })
-  async getPublicProfile(@Param('id') userId: string) {
-    return { message: 'Profile retrieved', data: await this.usersService.getProfile(userId) };
+  async getPublicProfile(@Param('id') userId: string, @CurrentUser('id') currentUserId?: string) {
+    return { message: 'Profile retrieved', data: await this.usersService.getProfile(userId, currentUserId) };
   }
 
   @Patch('profile')

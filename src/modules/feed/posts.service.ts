@@ -34,12 +34,13 @@ export class PostsService {
   ) {}
 
   async findAll(filter: any) {
-    const { search, city, type, authorId, cursor, limit = 20 } = filter;
+    const { search, city, type, authorId, likedBy, cursor, limit = 20 } = filter;
 
     const where: any = {};
     if (city) where.city = { equals: city, mode: 'insensitive' };
     if (type) where.type = type;
     if (authorId) where.authorId = authorId;
+    if (likedBy) where.reactions = { some: { userId: likedBy } };
     if (search) {
       where.OR = [
         { content: { contains: search, mode: 'insensitive' } },

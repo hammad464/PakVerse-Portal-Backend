@@ -30,7 +30,7 @@ export class UsersService {
     private uploadService: UploadService,
   ) {}
 
-  async getProfile(userId: string) {
+  async getProfile(userId: string, currentUserId?: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -46,7 +46,23 @@ export class UsersService {
       },
     });
     if (!user) throw new NotFoundException('User not found');
-    return user;
+
+    let isFollowing = false;
+    if (currentUserId && currentUserId !== userId) {
+      const friendship = await this.prisma.friendship.findFirst({
+        where: {
+          OR: [
+            { senderId: currentUserId, receiverId: userId },
+            { senderId: userId, receiverId: currentUserId },
+          ],
+        },
+      });
+      if (friendship) {
+        isFollowing = true;
+      }
+    }
+
+    return { ...user, isFollowing };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {

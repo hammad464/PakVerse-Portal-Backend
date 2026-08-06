@@ -169,6 +169,18 @@ export class FeedController {
     };
   }
 
+  @Post('friends/request/:userId')
+  @ApiOperation({ summary: 'Send a friend request to specific target userId' })
+  async sendFriendRequestToUser(
+    @CurrentUser('id') currentUserId: string,
+    @Param('userId') targetUserId: string,
+  ) {
+    return {
+      message: 'Friend request sent',
+      data: await this.friendsService.sendRequest(currentUserId, targetUserId),
+    };
+  }
+
   @Patch('friends/:id/accept')
   @ApiOperation({ summary: 'Accept a friend request' })
   async acceptRequest(@Param('id') id: string, @CurrentUser('id') userId: string) {

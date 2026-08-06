@@ -4,11 +4,13 @@
 
 # Dependencies
 /node_modules
-
+.agents
+/.agents/
 # Environment variables & secrets
 .env
 .env.*
 !.env.example
+/skills
 
 # Logs
 *.log
@@ -36,3 +38,4 @@ Thumbs.db
 /imp_plan
 /tmp
 /.cache
+

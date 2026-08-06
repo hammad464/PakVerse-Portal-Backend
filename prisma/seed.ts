@@ -132,7 +132,7 @@ async function main() {
       name: 'Lahore University of Management Sciences',
       slug: 'lahore-university-of-management',
       description: 'LUMS is one of Pakistan\'s leading universities offering world-class education',
-      type: 'University',
+      type: 'UNIVERSITY',
       city: 'Lahore',
       location: 'Sector U, DHA, Lahore',
       phone: '042-35608000',
@@ -146,7 +146,29 @@ async function main() {
       adminId: admin.id,
     },
   });
-  console.log(`✅ Sample institute seeded`);
+
+  await prisma.institute.upsert({
+    where: { slug: 'lahore-college-for-women' },
+    update: {},
+    create: {
+      name: 'Lahore College for Women',
+      slug: 'lahore-college-for-women',
+      description: 'An independent women\'s college in Lahore',
+      type: 'COLLEGE',
+      city: 'Lahore',
+      location: 'Jail Road, Lahore',
+      phone: '042-99203801',
+      email: 'info@lcwu.edu.pk',
+      specialization: 'Arts, Science',
+      website: 'https://lcwu.edu.pk',
+      yearEstablished: 1922,
+      studentCount: '3000+',
+      rating: 4.5,
+      isVerified: true,
+      adminId: admin.id,
+    },
+  });
+  console.log(`✅ Sample institutes seeded`);
 
   // ─── Sample Marketplace Listings ──────────────────────────────
   const listings = [
