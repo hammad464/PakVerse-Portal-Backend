@@ -44,9 +44,11 @@ export class AuthService {
       return this.mailerTransport;
     }
 
+    const port = this.config.get<number>('MAIL_PORT', 587);
     this.mailerTransport = nodemailer.createTransport({
       host,
-      port: this.config.get<number>('MAIL_PORT', 587),
+      port,
+      secure: port === 465, // true for 465, false for other ports
       auth: { user, pass },
     });
     return this.mailerTransport;
