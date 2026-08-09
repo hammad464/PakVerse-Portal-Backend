@@ -5,9 +5,9 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsOptional, IsInt, IsBoolean, IsEnum } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { AppointmentType } from '@prisma/client';
+import { AppointmentType, AppointmentStatus } from '@prisma/client';
 import { HospitalService } from './hospital.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -57,6 +57,11 @@ class HealthMetricDto {
   @ApiProperty() @IsString() status: string;
 }
 
+export class UpdateHospitalDto extends PartialType(CreateHospitalDto) {}
+export class UpdateAppointmentDto extends PartialType(BookAppointmentDto) {
+  @ApiPropertyOptional() @IsOptional() @IsEnum(AppointmentStatus) status?: AppointmentStatus;
+}
+
 @ApiTags('Hospital')
 @Controller('hospital')
 @UseGuards(JwtAuthGuard)
@@ -89,7 +94,7 @@ export class HospitalController {
 
   @Patch('hospitals/:id') @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Update hospital' })
-  async update(@Param('id') id: string, @CurrentUser('id') userId: string, @Body() body: any) {
+  async update(@Param('id') id: string, @CurrentUser('id') userId: string, @Body() body: UpdateHospitalDto) {
     return { message: 'Hospital updated', data: await this.hospitalService.update(id, userId, body) };
   }
 
@@ -119,7 +124,7 @@ export class HospitalController {
 
   @Patch('appointments/:id') @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Update/cancel appointment' })
-  async updateAppointment(@Param('id') id: string, @CurrentUser('id') userId: string, @Body() body: any) {
+  async updateAppointment(@Param('id') id: string, @CurrentUser('id') userId: string, @Body() body: UpdateAppointmentDto) {
     return { message: 'Appointment updated', data: await this.hospitalService.updateAppointment(id, userId, body) };
   }
 

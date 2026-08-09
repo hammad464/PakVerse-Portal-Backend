@@ -48,8 +48,4 @@ export class CreateShopReviewDto {
   @MaxLength(500)
   comment?: string;
 
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  reviewerName: string;
 }

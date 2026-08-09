@@ -179,6 +179,10 @@ export class ShopsService {
     data: Partial<CreateShopProductDto>,
   ) {
     await this.assertOwner(shopId, userId);
+    const product = await this.prisma.shopProduct.findUnique({ where: { id: productId } });
+    if (!product || product.shopId !== shopId) {
+      throw new NotFoundException('Product not found in this shop');
+    }
     return this.prisma.shopProduct.update({
       where: { id: productId },
       data,
@@ -187,6 +191,10 @@ export class ShopsService {
 
   async removeProduct(shopId: string, productId: string, userId: string) {
     await this.assertOwner(shopId, userId);
+    const product = await this.prisma.shopProduct.findUnique({ where: { id: productId } });
+    if (!product || product.shopId !== shopId) {
+      throw new NotFoundException('Product not found in this shop');
+    }
     await this.prisma.shopProduct.update({
       where: { id: productId },
       data: { isActive: false },
@@ -195,9 +203,9 @@ export class ShopsService {
   }
 
   // ─── Reviews ──────────────────────────────────────────────────
-  async addReview(shopId: string, dto: CreateShopReviewDto) {
+  async addReview(shopId: string, userId: string, dto: CreateShopReviewDto) {
     const review = await this.prisma.shopReview.create({
-      data: { ...dto, shopId },
+      data: { ...dto, shopId, reviewerId: userId },
     });
 
     // Update shop rating

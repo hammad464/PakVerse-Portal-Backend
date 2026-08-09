@@ -92,8 +92,8 @@ export class MarketplaceController {
 
   @Post('listings/:id/favorite') @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Toggle favorite on listing' })
-  async toggleFavorite(@Param('id') id: string) {
-    return { message: 'Favorite toggled', data: await this.marketplaceService.toggleFavorite(id) };
+  async toggleFavorite(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return { message: 'Favorite toggled', data: await this.marketplaceService.toggleFavorite(id, userId) };
   }
 
   @Post('listings/:id/inquire') @ApiBearerAuth('JWT')

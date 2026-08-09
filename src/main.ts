@@ -11,8 +11,9 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
+  const isProduction = process.env.NODE_ENV === 'production';
   const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn', 'log', 'debug'],
+    logger: isProduction ? ['error', 'warn', 'log'] : ['error', 'warn', 'log', 'debug', 'verbose'],
   });
 
   const configService = app.get(ConfigService);
@@ -24,16 +25,20 @@ async function bootstrap() {
   app.use(compression());
   app.use(cookieParser());
 
+  const allowedOrigins = isProduction
+    ? [frontendUrl]
+    : [
+        frontendUrl, 
+        'http://localhost:5174', 
+        'http://localhost:3000', 
+        'http://127.0.0.1:5173', 
+        'http://127.0.0.1:5174',
+        'http://localhost:8080',
+        'http://127.0.0.1:8080'
+      ];
+
   app.enableCors({
-    origin: [
-      frontendUrl, 
-      'http://localhost:5174', 
-      'http://localhost:3000', 
-      'http://127.0.0.1:5173', 
-      'http://127.0.0.1:5174',
-      'http://localhost:8080',
-      'http://127.0.0.1:8080'
-    ],
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],

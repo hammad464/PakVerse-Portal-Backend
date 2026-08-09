@@ -46,22 +46,24 @@ model User {
   updatedAt        DateTime  @updatedAt
 
   // Relations
-  shops            Shop[]
-  posts            Post[]
-  comments         Comment[]
-  reactions        Reaction[]
-  listings         MarketplaceListing[]
-  institutes       Institute[]
-  enrollments      Enrollment[]
-  doctorProfile    Doctor?
-  patientProfile   Patient?
-  hospitals        Hospital[]
+  shops          Shop[]
+  posts          Post[]
+  comments       Comment[]
+  reactions      Reaction[]
+  listings       MarketplaceListing[]
+  institutes     Institute[]
+  enrollments    Enrollment[]
+  doctorProfile  Doctor?
+  patientProfile Patient?
+  hospitals      Hospital[]
 
-  sentFriendRequests     Friendship[] @relation("FriendRequestSender")
-  receivedFriendRequests Friendship[] @relation("FriendRequestReceiver")
+  sentFriendRequests     Friendship[]   @relation("FriendRequestSender")
+  receivedFriendRequests Friendship[]   @relation("FriendRequestReceiver")
   notifications          Notification[]
-  sentInquiries          Inquiry[]    @relation("InquirySender")
-  receivedInquiries      Inquiry[]    @relation("InquiryReceiver")
+  sentInquiries          Inquiry[]      @relation("InquirySender")
+  receivedInquiries      Inquiry[]      @relation("InquiryReceiver")
+  shopReviews            ShopReview[]
+  favorites              Favorite[]
 
   @@index([email])
   @@index([city])
@@ -77,18 +79,18 @@ enum ShopType {
 }
 
 model Shop {
-  id              String      @id @default(uuid())
-  name            String
-  slug            String      @unique
-  description     String
-  shopType        ShopType
-  city            String
-  categories      String[]
-  logoUrl         String?
-  bannerUrl       String?
-  rating          Float       @default(0)
-  totalReviews    Int         @default(0)
-  isActive        Boolean     @default(true)
+  id           String   @id @default(uuid())
+  name         String
+  slug         String   @unique
+  description  String
+  shopType     ShopType
+  city         String
+  categories   String[]
+  logoUrl      String?
+  bannerUrl    String?
+  rating       Float    @default(0)
+  totalReviews Int      @default(0)
+  isActive     Boolean  @default(true)
 
   // Contact & Social
   whatsappNumber  String?
@@ -99,14 +101,14 @@ model Shop {
   email           String?
 
   // Relations
-  ownerId         String
-  owner           User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  products        ShopProduct[]
-  reviews         ShopReview[]
-  gallery         ShopGalleryImage[]
+  ownerId  String
+  owner    User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  products ShopProduct[]
+  reviews  ShopReview[]
+  gallery  ShopGalleryImage[]
 
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([city])
   @@index([shopType])
@@ -115,20 +117,20 @@ model Shop {
 }
 
 model ShopProduct {
-  id                 String   @id @default(uuid())
+  id                 String  @id @default(uuid())
   name               String
   price              Float
   description        String
   imageUrl           String?
   category           String
-  discountPercentage Float    @default(0)
-  isActive           Boolean  @default(true)
+  discountPercentage Float   @default(0)
+  isActive           Boolean @default(true)
 
-  shopId             String
-  shop               Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([shopId])
   @@index([category])
@@ -146,15 +148,16 @@ model ShopGalleryImage {
 }
 
 model ShopReview {
-  id             String   @id @default(uuid())
-  rating         Int
-  comment        String?
-  reviewerName   String
-  reviewerAvatar String?
-  shopId         String
-  shop           Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  createdAt      DateTime @default(now())
+  id         String   @id @default(uuid())
+  rating     Int
+  comment    String?
+  reviewerId String
+  reviewer   User     @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+  shopId     String
+  shop       Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
 
+  @@unique([shopId, reviewerId])
   @@index([shopId])
 }
 
@@ -191,13 +194,13 @@ model Institute {
   rating          Float           @default(0)
   isVerified      Boolean         @default(false)
 
-  adminId         String
-  admin           User            @relation(fields: [adminId], references: [id])
-  courses         Course[]
-  enrollments     Enrollment[]
+  adminId     String
+  admin       User         @relation(fields: [adminId], references: [id])
+  courses     Course[]
+  enrollments Enrollment[]
 
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([city])
   @@index([type])
@@ -205,7 +208,7 @@ model Institute {
 }
 
 model Course {
-  id          String       @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String
   description String?
   duration    String?
@@ -217,17 +220,17 @@ model Course {
   institute   Institute    @relation(fields: [instituteId], references: [id], onDelete: Cascade)
   enrollments Enrollment[]
 
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([instituteId])
 }
 
 model Enrollment {
-  id          String    @id @default(uuid())
-  status      String    @default("active")
-  grade       String?
-  progress    Float     @default(0)
+  id       String  @id @default(uuid())
+  status   String  @default("active")
+  grade    String?
+  progress Float   @default(0)
 
   studentId   String
   student     User      @relation(fields: [studentId], references: [id])
@@ -265,24 +268,24 @@ enum ReactionType {
 }
 
 model Post {
-  id            String     @id @default(uuid())
+  id            String   @id @default(uuid())
   content       String
-  type          PostType   @default(POST)
+  type          PostType @default(POST)
   city          String
   location      String?
   hashtags      String[]
   mediaUrls     String[]
-  likesCount    Int        @default(0)
-  commentsCount Int        @default(0)
-  sharesCount   Int        @default(0)
+  likesCount    Int      @default(0)
+  commentsCount Int      @default(0)
+  sharesCount   Int      @default(0)
 
-  authorId      String
-  author        User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  comments      Comment[]
-  reactions     Reaction[]
+  authorId  String
+  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments  Comment[]
+  reactions Reaction[]
 
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([city])
   @@index([authorId])
@@ -291,13 +294,13 @@ model Post {
 }
 
 model Comment {
-  id       String    @id @default(uuid())
-  content  String
+  id      String @id @default(uuid())
+  content String
 
   authorId String
-  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
   postId   String
-  post     Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   parentId String?
   parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
@@ -312,15 +315,15 @@ model Comment {
 }
 
 model Reaction {
-  id        String       @id @default(uuid())
-  type      ReactionType
+  id   String       @id @default(uuid())
+  type ReactionType
 
-  userId    String
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  postId    String
-  post      Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime     @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([userId, postId])
   @@index([postId])
@@ -334,16 +337,16 @@ enum FriendshipStatus {
 }
 
 model Friendship {
-  id         String           @id @default(uuid())
-  status     FriendshipStatus @default(PENDING)
+  id     String           @id @default(uuid())
+  status FriendshipStatus @default(PENDING)
 
   senderId   String
-  sender     User             @relation("FriendRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+  sender     User   @relation("FriendRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
   receiverId String
-  receiver   User             @relation("FriendRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  receiver   User   @relation("FriendRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
 
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([senderId, receiverId])
   @@index([senderId, status])
@@ -383,12 +386,13 @@ model MarketplaceListing {
   favoritesCount Int              @default(0)
   isFeatured     Boolean          @default(false)
 
-  sellerId       String
-  seller         User             @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  inquiries      Inquiry[]
+  sellerId  String
+  seller    User       @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  inquiries Inquiry[]
+  favorites Favorite[]
 
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([category])
   @@index([city])
@@ -404,23 +408,36 @@ enum InquiryStatus {
 }
 
 model Inquiry {
-  id         String        @id @default(uuid())
-  message    String
-  reply      String?
-  status     InquiryStatus @default(UNREAD)
+  id      String        @id @default(uuid())
+  message String
+  reply   String?
+  status  InquiryStatus @default(UNREAD)
 
   senderId   String
-  sender     User          @relation("InquirySender", fields: [senderId], references: [id], onDelete: Cascade)
+  sender     User               @relation("InquirySender", fields: [senderId], references: [id], onDelete: Cascade)
   receiverId String
-  receiver   User          @relation("InquiryReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  receiver   User               @relation("InquiryReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
   listingId  String
   listing    MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([senderId])
   @@index([receiverId])
+  @@index([listingId])
+}
+
+model Favorite {
+  id        String             @id @default(uuid())
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId String
+  listing   MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  createdAt DateTime           @default(now())
+
+  @@unique([userId, listingId])
+  @@index([userId])
   @@index([listingId])
 }
 
@@ -429,32 +446,32 @@ model Inquiry {
 // ============================================
 
 model Hospital {
-  id               String   @id @default(uuid())
+  id               String  @id @default(uuid())
   name             String
-  slug             String   @unique
+  slug             String  @unique
   description      String
   specialization   String
   city             String
   category         String
   imageUrl         String?
-  rating           Float    @default(0)
-  doctorsCount     Int      @default(0)
-  bedsCount        Int      @default(0)
-  emergencyService Boolean  @default(false)
-  admissionStatus  String   @default("Open")
+  rating           Float   @default(0)
+  doctorsCount     Int     @default(0)
+  bedsCount        Int     @default(0)
+  emergencyService Boolean @default(false)
+  admissionStatus  String  @default("Open")
   phone            String?
   email            String?
   address          String?
   website          String?
 
-  adminId          String
-  admin            User     @relation(fields: [adminId], references: [id])
+  adminId String
+  admin   User   @relation(fields: [adminId], references: [id])
 
-  doctors          Doctor[]
-  appointments     Appointment[]
+  doctors      Doctor[]
+  appointments Appointment[]
 
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([city])
   @@index([category])
@@ -462,23 +479,23 @@ model Hospital {
 }
 
 model Doctor {
-  id              String    @id @default(uuid())
+  id              String  @id @default(uuid())
   specialty       String
   experience      String
   consultationFee String
   bio             String?
   schedule        Json?
-  isAvailable     Boolean   @default(true)
+  isAvailable     Boolean @default(true)
 
-  userId          String    @unique
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  hospitalId      String
-  hospital        Hospital  @relation(fields: [hospitalId], references: [id])
-  appointments    Appointment[]
-  prescriptions   Prescription[]
+  userId        String         @unique
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hospitalId    String
+  hospital      Hospital       @relation(fields: [hospitalId], references: [id])
+  appointments  Appointment[]
+  prescriptions Prescription[]
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([hospitalId])
   @@index([specialty])
@@ -513,15 +530,15 @@ model Appointment {
   symptoms      String?
   notes         String?
 
-  doctorId      String
-  doctor        Doctor            @relation(fields: [doctorId], references: [id])
-  hospitalId    String
-  hospital      Hospital          @relation(fields: [hospitalId], references: [id])
-  patientId     String?
-  patient       Patient?          @relation(fields: [patientId], references: [id])
+  doctorId   String
+  doctor     Doctor   @relation(fields: [doctorId], references: [id])
+  hospitalId String
+  hospital   Hospital @relation(fields: [hospitalId], references: [id])
+  patientId  String?
+  patient    Patient? @relation(fields: [patientId], references: [id])
 
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([doctorId, date])
   @@index([patientId])
@@ -530,40 +547,40 @@ model Appointment {
 }
 
 model Patient {
-  id               String          @id @default(uuid())
+  id               String   @id @default(uuid())
   bloodType        String?
   allergies        String[]
   emergencyContact String?
   insuranceInfo    String?
 
-  userId           String          @unique
-  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  appointments     Appointment[]
-  prescriptions    Prescription[]
-  medicalRecords   MedicalRecord[]
-  healthMetrics    HealthMetric[]
+  userId         String          @unique
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments   Appointment[]
+  prescriptions  Prescription[]
+  medicalRecords MedicalRecord[]
+  healthMetrics  HealthMetric[]
 
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Prescription {
-  id           String   @id @default(uuid())
+  id           String  @id @default(uuid())
   medication   String
   dosage       String
   frequency    String
   duration     String
   remaining    String?
   instructions String?
-  isActive     Boolean  @default(true)
+  isActive     Boolean @default(true)
 
-  doctorId     String
-  doctor       Doctor   @relation(fields: [doctorId], references: [id])
-  patientId    String
-  patient      Patient  @relation(fields: [patientId], references: [id])
+  doctorId  String
+  doctor    Doctor  @relation(fields: [doctorId], references: [id])
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id])
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([patientId, isActive])
   @@index([doctorId])
@@ -579,23 +596,23 @@ model MedicalRecord {
   reportUrl    String?
   status       String   @default("completed")
 
-  patientId    String
-  patient      Patient  @relation(fields: [patientId], references: [id])
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id])
 
-  createdAt    DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([patientId])
 }
 
 model HealthMetric {
-  id         String   @id @default(uuid())
+  id         String @id @default(uuid())
   metricType String
   value      String
   unit       String
   status     String
 
-  patientId  String
-  patient    Patient  @relation(fields: [patientId], references: [id])
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id])
 
   recordedAt DateTime @default(now())
 
@@ -607,15 +624,15 @@ model HealthMetric {
 // ============================================
 
 model Notification {
-  id        String   @id @default(uuid())
-  title     String
-  message   String
-  type      String
-  isRead    Boolean  @default(false)
-  data      Json?
+  id      String  @id @default(uuid())
+  title   String
+  message String
+  type    String
+  isRead  Boolean @default(false)
+  data    Json?
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 

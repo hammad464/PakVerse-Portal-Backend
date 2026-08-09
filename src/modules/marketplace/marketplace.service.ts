@@ -111,12 +111,26 @@ export class MarketplaceService {
     return this.prisma.marketplaceListing.update({ where: { id }, data: { status } });
   }
 
-  async toggleFavorite(listingId: string) {
-    // Simple favorite count increment (no per-user tracking in this schema)
-    return this.prisma.marketplaceListing.update({
-      where: { id: listingId },
-      data: { favoritesCount: { increment: 1 } },
+  async toggleFavorite(listingId: string, userId: string) {
+    const existing = await this.prisma.favorite.findUnique({
+      where: { userId_listingId: { userId, listingId } },
     });
+
+    if (existing) {
+      await this.prisma.favorite.delete({ where: { id: existing.id } });
+      return this.prisma.marketplaceListing.update({
+        where: { id: listingId },
+        data: { favoritesCount: { decrement: 1 } },
+      });
+    } else {
+      await this.prisma.favorite.create({
+        data: { userId, listingId },
+      });
+      return this.prisma.marketplaceListing.update({
+        where: { id: listingId },
+        data: { favoritesCount: { increment: 1 } },
+      });
+    }
   }
 
   async sendInquiry(listingId: string, senderId: string, message: string) {

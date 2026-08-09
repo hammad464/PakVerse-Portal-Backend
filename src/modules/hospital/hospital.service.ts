@@ -115,8 +115,20 @@ export class HospitalService {
   }
 
   async updateAppointment(id: string, userId: string, data: any) {
-    const appt = await this.prisma.appointment.findUnique({ where: { id } });
+    const appt = await this.prisma.appointment.findUnique({
+      where: { id },
+      include: { doctor: true, patient: true, hospital: true },
+    });
     if (!appt) throw new NotFoundException('Appointment not found');
+
+    const isDoctor = appt.doctor.userId === userId;
+    const isPatient = appt.patient?.userId === userId;
+    const isAdmin = appt.hospital.adminId === userId;
+
+    if (!isDoctor && !isPatient && !isAdmin) {
+      throw new ForbiddenException('Not authorized to update this appointment');
+    }
+
     return this.prisma.appointment.update({ where: { id }, data });
   }
 

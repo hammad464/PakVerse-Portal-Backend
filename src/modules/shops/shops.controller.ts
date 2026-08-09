@@ -142,9 +142,10 @@ export class ShopsController {
   @ApiOperation({ summary: 'Submit a review for a shop' })
   async addReview(
     @Param('id') shopId: string,
+    @CurrentUser('id') userId: string,
     @Body() dto: CreateShopReviewDto,
   ) {
-    return { message: 'Review submitted', data: await this.shopsService.addReview(shopId, dto) };
+    return { message: 'Review submitted', data: await this.shopsService.addReview(shopId, userId, dto) };
   }
 
   // ─── Gallery ───────────────────────────────────────────────

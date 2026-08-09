@@ -52,11 +52,4 @@ export class UploadController {
     return { message: 'Video uploaded', data: result };
   }
 
-  @Delete(':publicId')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Delete a file from Cloudinary by public ID' })
-  async deleteFile(@Param('publicId') publicId: string) {
-    await this.uploadService.deleteFile(publicId);
-    return { message: 'File deleted successfully' };
-  }
 }

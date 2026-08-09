@@ -12,8 +12,13 @@ import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 
+import { NotificationsService } from './notifications.service';
+
 @WebSocketGateway({
-  cors: { origin: '*', credentials: true },
+  cors: { 
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173', 
+    credentials: true 
+  },
   namespace: '/notifications',
 })
 export class NotificationsGateway
@@ -28,6 +33,7 @@ export class NotificationsGateway
   constructor(
     private jwtService: JwtService,
     private config: ConfigService,
+    private notificationsService: NotificationsService,
   ) {}
 
   // ─── Connection ───────────────────────────────────────────────
@@ -79,10 +85,13 @@ export class NotificationsGateway
 
   // ─── Mark read (via socket) ───────────────────────────────────
   @SubscribeMessage('mark_read')
-  handleMarkRead(
+  async handleMarkRead(
     @MessageBody() data: { notificationId: string },
     @ConnectedSocket() client: Socket,
   ) {
     this.logger.log(`Mark read: ${data.notificationId} by ${client.data.userId}`);
+    if (client.data.userId && data.notificationId) {
+      await this.notificationsService.markAsRead(data.notificationId, client.data.userId);
+    }
   }
 }
