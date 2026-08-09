@@ -122,17 +122,53 @@ export class AuthService {
     return { user, accessToken, refreshToken };
   }
 
+  // ─── Email Sender Wrapper ─────────────────────────────────────
+  private async sendMailViaHttpOrSmtp(to: string, subject: string, html: string) {
+    const host = this.config.get('MAIL_HOST');
+    const user = this.config.get('MAIL_USER');
+    const pass = this.config.get('MAIL_PASS');
+    const from = this.config.get('MAIL_FROM', 'noreply@pakverse.pk');
+
+    // Mailgun HTTP API Fallback (Bypasses Railway SMTP Block)
+    if (host && host.includes('mailgun')) {
+      const domain = user.split('@')[1];
+      const formData = new URLSearchParams();
+      formData.append('from', from);
+      formData.append('to', to);
+      formData.append('subject', subject);
+      formData.append('html', html);
+
+      const response = await fetch(`https://api.mailgun.net/v3/${domain}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + Buffer.from(`api:${pass}`).toString('base64'),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData.toString(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Mailgun API error: ${await response.text()}`);
+      }
+      return;
+    }
+
+    // Standard SMTP
+    const mailer = await this.getMailer();
+    const info = await mailer.sendMail({ from, to, subject, html });
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('📧 Email preview:', nodemailer.getTestMessageUrl(info));
+    }
+  }
+
   // ─── Welcome Email ────────────────────────────────────────────
   private async sendWelcomeEmail(email: string, fullName: string) {
     try {
-      const mailer = await this.getMailer();
       const loginUrl = `${this.config.get('FRONTEND_URL')}/login`;
-      
-      const info = await mailer.sendMail({
-        from: this.config.get('MAIL_FROM', 'noreply@pakverse.pk'),
-        to: email,
-        subject: 'Welcome to PakVerse! 🚀',
-        html: `
+      await this.sendMailViaHttpOrSmtp(
+        email,
+        'Welcome to PakVerse! 🚀',
+        `
           <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">
             <h2 style="color:#0ea5e9">Welcome to PakVerse!</h2>
             <p>Hi ${fullName},</p>
@@ -145,12 +181,8 @@ export class AuthService {
             <hr/>
             <small style="color:#888">PakVerse Portal — Pakistan's community platform</small>
           </div>
-        `,
-      });
-
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('📧 Welcome email preview:', nodemailer.getTestMessageUrl(info));
-      }
+        `
+      );
     } catch (error) {
       console.error('Welcome email send failed:', error);
     }
@@ -245,12 +277,10 @@ export class AuthService {
     const resetUrl = `${this.config.get('FRONTEND_URL')}/reset-password?token=${token}`;
 
     try {
-      const mailer = await this.getMailer();
-      const info = await mailer.sendMail({
-        from: this.config.get('MAIL_FROM', 'noreply@pakverse.pk'),
-        to: email,
-        subject: 'PakVerse — Reset Your Password',
-        html: `
+      await this.sendMailViaHttpOrSmtp(
+        email,
+        'PakVerse — Reset Your Password',
+        `
           <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">
             <h2 style="color:#0ea5e9">PakVerse Password Reset</h2>
             <p>Hi ${user.fullName},</p>
@@ -263,12 +293,8 @@ export class AuthService {
             <hr/>
             <small style="color:#888">PakVerse Portal — Pakistan's community platform</small>
           </div>
-        `,
-      });
-
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('📧 Password reset email preview:', nodemailer.getTestMessageUrl(info));
-      }
+        `
+      );
     } catch (error) {
       console.error('Email send failed:', error);
     }
