@@ -37,8 +37,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
-      target: development
+      dockerfile: Dockerfile.dev
     container_name: pakverse_api
     restart: unless-stopped
     env_file:

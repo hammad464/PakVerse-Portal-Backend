@@ -14,19 +14,8 @@ COPY . .
 
 RUN npm run build
 
-# ─── Development Stage ─────────────────────────────────────
-FROM node:20-alpine AS development
-
-WORKDIR /app
-
-COPY package*.json ./
-COPY prisma ./prisma/
-
-RUN npm ci
-
-COPY . .
-
-EXPOSE 3001
+# Fail the build loudly here instead of shipping a broken image
+RUN test -f dist/main.js || (echo "BUILD FAILED: dist/main.js was not produced by 'npm run build'" && ls -la dist && exit 1)
 
 # ─── Production Stage ──────────────────────────────────────
 FROM node:20-alpine AS production
@@ -37,12 +26,17 @@ WORKDIR /app
 
 RUN apk add --no-cache openssl
 
+ENV NODE_ENV=production
+
 COPY package*.json ./
 COPY prisma ./prisma/
 
-RUN npm ci --only=production && npx prisma generate
+RUN npm ci --omit=dev && npx prisma generate
 
 COPY --from=builder /app/dist ./dist
+
+# Verify the artifact made it into the final image too
+RUN test -f dist/main.js || (echo "IMAGE BUILD FAILED: dist/main.js missing from production stage" && exit 1)
 
 USER nestjs
 
